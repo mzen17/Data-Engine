@@ -7,6 +7,7 @@
 
     const swap = (switchTo: string) => {
         selected = buttons.indexOf(switchTo);
+        console.log(selected);
         setCurrent(selected);
     };
 </script>

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { GraphNode, LabelNode, SplitNode } from "./Nodes";
+    import { GraphNode, LabelNode, SplitNode, FilterNode } from "./Nodes";
 
     export let node: GraphNode | null = null;
     export let nodes: GraphNode[];
@@ -19,6 +19,11 @@
         }
         else if (select == "label") {
             newNode = new LabelNode(["yes"]);
+            console.log("Adding label")
+        }
+        else if(select == "filter") {
+            console.log("Adding filter")
+            newNode = new FilterNode([]);
         }
         else {
             console.log("Unknown node type: " + select);
@@ -70,6 +75,7 @@
                 <select class="border-2 ml-2 border-gray-800 w-16 text-sm rounded-md  " bind:value={select}>
                     <option value="split">Split</option>
                     <option value="label">Label</option>
+                    <option value="filter">Filter</option>
                 </select>
                 <button class="bg-green-400 w-16 text-sm rounded-md mr-4" on:click={() => {addNode()}}>Add</button>
             </form>

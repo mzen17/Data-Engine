@@ -8,6 +8,7 @@
 
     const deleteLineAt = (index: number) => {
       lines = lines.slice(0, index).concat(lines.slice(index + 1));
+      save_lines(lines);
       redrawCanvas(); 
     }
 
@@ -19,6 +20,7 @@
 
     let width = 384;
     let height = 384;
+    let scale: number[] = [];
 
     onMount(async() => {
       canvas = document.getElementById("canvas") as HTMLCanvasElement;
@@ -29,10 +31,20 @@
       let x = (imgdim[0] > 500) ? 500 : imgdim[0]
       width = Math.round(x);
       height = Math.round(x * imgdim[1] / imgdim[0])
+
+      var rect = canvas.getBoundingClientRect()
+      const scaleX = canvas.width / rect.width;    // relationship bitmap vs. element for x
+      const scaleY = canvas.height / rect.height;  // relationship bitmap vs. element for y
+
+      scale = [scaleX, scaleY];
     });
 
     afterUpdate(() => {
       redrawCanvas();
+      var rect = canvas.getBoundingClientRect()
+      const scaleX = canvas.width / rect.width;    // relationship bitmap vs. element for x
+      const scaleY = canvas.height / rect.height;  // relationship bitmap vs. element for y
+      scale = [scaleX, scaleY];
     });
 
    const distance = (point1: number[], point2: number[]) => {
@@ -45,8 +57,8 @@
   return new Promise<number[]>((resolve) => {
     const img = new Image();
     img.onload = function () {
-      const width = img.width;
-      const height = img.height;
+      const width = img.naturalWidth;
+      const height = img.naturalHeight;
       resolve([width, height]);
     };
     img.src = imageUrl;
@@ -56,6 +68,7 @@
   
     function handleMouseDown(event: MouseEvent) {
         let pos = getMousePos(canvas, event)
+
         currentLine = [[pos.x, pos.y], [pos.x, pos.y]];
         drawing = true;
     }
@@ -63,22 +76,38 @@
       if (!drawing || !ctx || !currentLine) return;
       let pos = getMousePos(canvas, event)
 
-      if (distance(currentLine[0], [pos.x, pos.y]) < 5) {
-        currentLine[1] = [pos.x, pos.y];
-      }
+      currentLine[1] = [pos.x, pos.y];
 
-      // Snap line to x or y, whichever is closer
-      else if (Math.abs(currentLine[0][0] - pos.x) < Math.abs(currentLine[0][1] - pos.y)) {
-        currentLine[1] = [currentLine[0][0], pos.y];
-      }
-      else {
-        currentLine[1] = [pos.x, currentLine[0][1]];
-      }
+      if (distance([currentLine[0][0] * scale[0], currentLine[0][1]*scale[1]], [pos.x * scale[0], pos.y * scale[1]]) < 5) {
+        currentLine[1] = [pos.x, pos.y];
+      } else if (Math.abs(currentLine[0][0] - currentLine[1][0]) < Math.abs(currentLine[0][1] - currentLine[1][1])) {
+          currentLine[1] = [currentLine[0][0], pos.y];
+          if(isKeydown("Control")) {
+            if (currentLine[1][1] > height/2) {
+              currentLine[1] = [currentLine[1][0], height];
+            }
+            else {
+              currentLine[1] = [currentLine[1][0], 0];
+            }
+          }
+        }
+        else {
+          currentLine[1] = [pos.x, currentLine[0][1]];
+          if(isKeydown("Control")) {
+            if (currentLine[1][0] > width/2) {
+              currentLine[1] = [width, currentLine[1][1]];
+            }
+            else {
+              currentLine[1] = [0, currentLine[1][1]];
+            }
+          }
+        }
+      
       redrawCanvas();
     }
+
     function handleMouseUp() {
       if(isKeydown("Shift")) {
-        console.log("Up while shift!")
         // Expand the current line to be the canvas width or height, whichever the line is facing
         if (currentLine) {
           if (Math.abs(currentLine[0][0] - currentLine[1][0]) < Math.abs(currentLine[0][1] - currentLine[1][1])) {
@@ -91,6 +120,8 @@
           }
         }
       }
+      // Else snap end point to the nearest edge
+
       if (currentLine) {
         lines = [...lines, currentLine];
       }
@@ -111,14 +142,11 @@
     }
 
     function getMousePos(canvas: HTMLCanvasElement, evt:MouseEvent) {
-        var rect = canvas.getBoundingClientRect(), // abs. size of element
-            scaleX = canvas.width / rect.width,    // relationship bitmap vs. element for x
-            scaleY = canvas.height / rect.height;  // relationship bitmap vs. element for y
-
-        return {
-            x: (evt.clientX - rect.left) * scaleX,   // scale mouse coordinates after they have
-            y: (evt.clientY - rect.top) * scaleY     // been adjusted to be relative to element
-        }
+        var rect = canvas.getBoundingClientRect(); // abs. size of element
+          return {
+            x: (evt.clientX - rect.left),   
+            y: (evt.clientY - rect.top) 
+          }
         }
   
     function redrawCanvas() {
@@ -127,19 +155,17 @@
       lines.forEach((line) => {
         if (!ctx) return;
         ctx.beginPath();
-        ctx.moveTo(line[0][0], line[0][1]);
-        ctx.lineTo(line[1][0], line[1][1]);
+        ctx.moveTo(line[0][0] * scale[0], line[0][1] * scale[1]);
+        ctx.lineTo(line[1][0] * scale[0], line[1][1] * scale[1]);
         ctx.stroke();
       });
       if (drawing && currentLine) {
         ctx.beginPath();
-        ctx.moveTo(currentLine[0][0], currentLine[0][1]);
-        ctx.lineTo(currentLine[1][0], currentLine[1][1]);
+        ctx.moveTo(currentLine[0][0] * scale[0], currentLine[0][1] * scale[1]);
+        ctx.lineTo(currentLine[1][0] * scale[0], currentLine[1][1] * scale[1]);
         ctx.stroke();
       }
     }
-
-    console.log(width, height)
 
     // Function to check if a specific key is currently being pressed
     function isKeydown(key: any) {
@@ -168,15 +194,15 @@
         on:mousedown={(e) => handleMouseDown(e)}
         on:mousemove={(e) => handleMouseMove(e)}
         on:mouseup={() => handleMouseUp()}
-        on:mouseleave={() => drawing && handleMouseUp()}
-        class="w-full border-2 border-gray-300 mr-2" style="height: {height}px; width: {width}px;">
+        class="w-full border-2 border-gray-300 mr-2" style="height: {height}px; width: {width}px;"
+      >
   </canvas>
   </div>
   <div class="flex-col flex">
     <button id="saveButton" on:click={saveLines} class="bg-green-400 h-8 rounded-md w-32 p-1 mb-2">Next</button>
     <button id="saveButton" on:click={saveBackward} class="bg-green-400 h-8 rounded-md w-32 p-1 mb-2">Backward</button>
 
-    <button id="delete" on:click={() => {lines = []; redrawCanvas()}} class="bg-red-700 w-32 h-8 rounded-md p-1">Delete All</button>
+    <button id="delete" on:click={() => {lines = [];save_lines(lines);redrawCanvas()}} class="bg-red-700 w-32 h-8 rounded-md p-1">Delete All</button>
 
     <div class = "h-96 overflow-scroll flex flex-col">
       {#each lines as line, i}

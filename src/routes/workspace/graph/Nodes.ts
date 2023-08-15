@@ -75,4 +75,28 @@ class LabelNode extends GraphNode{
     }
 }
 
-export { GraphNode, SplitNode, LabelNode };
+
+class FilterNode extends GraphNode{
+    indEdit: boolean[]
+
+    constructor(indEdit: boolean[]){
+        super("Filter", "Pass or reject nodes into the final data.", [0, 0])
+        this.indEdit = indEdit;
+    }
+
+    serialize() {
+        const baseData = super.serialize();
+        return JSON.stringify({
+            ...JSON.parse(baseData),
+            indEdit: this.indEdit
+        });
+    }
+
+    // Static method to create an instance from serialized JSON data
+    static deserialize(jsonData: any) {
+        const data = JSON.parse(jsonData);
+        return new FilterNode(data.indEdit);
+    }
+}
+
+export { GraphNode, SplitNode, LabelNode, FilterNode };

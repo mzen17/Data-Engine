@@ -2,32 +2,31 @@ use image::DynamicImage;
 
 
 #[derive(Clone, Debug, PartialEq)]
-struct RenderLayer {
+pub struct RenderLayer {
     img_path: String,
     layer_form: String,
+    data: String,
 }
 
-
-
 #[derive(Clone, Debug, PartialEq)]
-struct RenderQueue {
+pub struct RenderQueue {
     current: u32,
     queue: Vec<RenderLayer>,
 }
 
 impl RenderQueue {
-    fn new() -> RenderQueue {
+    pub fn new() -> RenderQueue {
         RenderQueue {
             current: 0,
             queue: Vec::new(),
         }
     }
 
-    fn add(&mut self, path: RenderLayer) {
+    pub fn add(&mut self, path: RenderLayer) {
         self.queue.push(path);
     }
 
-    fn next(&mut self) -> Option<RenderLayer> {
+    pub fn next(&mut self) -> Option<RenderLayer> {
         if self.current < self.queue.len() as u32 {
             let path = self.queue[self.current as usize].clone();
             self.current += 1;
@@ -37,7 +36,7 @@ impl RenderQueue {
         }
     }
 
-    fn render(&self) -> Option<DynamicImage> {
+    pub fn render(&self) -> Option<DynamicImage> {
         if self.current < self.queue.len() as u32 {
             let renderlayer = &self.queue[self.current as usize];
             let img = image::open(&renderlayer.img_path).unwrap();
@@ -59,7 +58,9 @@ impl RenderQueue {
         }
     }
 
-    fn completed(&self) -> bool {
+    pub fn completed(&self) -> bool {
         self.current >= self.queue.len() as u32
     }
 }
+
+

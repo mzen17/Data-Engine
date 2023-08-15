@@ -7,6 +7,9 @@
     import Graph from './graph/Graph.svelte';
     import { GraphNode, SplitNode, LabelNode } from './graph/Nodes';
     import Edit from './edit/Edit.svelte';
+    import Review from './review/Review.svelte';
+
+    import {rendergraph} from './render/render';
 
     let images_url: string[] = []    
     let project_name: string;
@@ -60,12 +63,17 @@
         selected = node;
     }
 
+    const render_graph = async(max: number = 0) => {
+        return await rendergraph(img_file_paths, graph, max);
+    }
+
 
     const setGraph = (newGraph: GraphNode[]) => {
         graph = newGraph;
     }
 
 
+    let img_file_paths: string[] = [];
     const get_img_paths = async (data_url: string) => {
         console.log("Fetching...")
 
@@ -86,7 +94,7 @@
             }
         }
         return images
-    };
+    }; 
 
 
     const render_img_paths = async(uris: string[], maxURIs=-1, start_index=0) => {
@@ -119,8 +127,6 @@
             "data": data_path,
             "graph": project_graph
         }
-        console.log("Project", project)
-
         localStorage.setItem(project_name, JSON.stringify(project))
     }
 
@@ -144,6 +150,7 @@
 
     const load_page = async () => {
         const images = await get_img_paths(data_path);
+        img_file_paths = images;
         await render_img_paths(images);
     }
 
@@ -161,12 +168,15 @@
     {#if current_page == 0}
         <h1>Preview</h1>
         <Himagepane images = {images_url} />
+    {:else if current_page == 3}
+        <h1>Review</h1>
+        <Review get_render={render_graph} />
     {:else}
     <div class="flex w-screen " style="height: calc(100vh - 64px);">
         {#if current_page == 1}
-        <Vimagepane images = {images_url} />
-        <Graph selectedNode = {selected} setSelectedNode={setSelectedNode} nodes={graph} set_nodes={setGraph}/>
-        {:else}
+            <Vimagepane images = {images_url} />
+            <Graph selectedNode = {selected} setSelectedNode={setSelectedNode} nodes={graph} set_nodes={setGraph}/>
+        {:else if current_page == 2}
             <Edit batch={images_url} save={save} node={(graph[selected] != null)? graph[selected]: null}/>
         {/if}
     </div>

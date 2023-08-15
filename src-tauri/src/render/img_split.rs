@@ -40,24 +40,23 @@ fn correct_direction(line: Line<f32>) -> Line<f32> {
 }
 
 
-use std::cmp::{max, min};
 // 2 * O(Amount of Lines) time complexity. Flatten lines so all values are between 0 and 1, while correcting their direction.
-fn flatten_to_1s(vectors: Vec<Line<i32>>) -> Vec<Line<f32>> {
+fn flatten_to_1s(vectors: Vec<Line<f32>>) -> Vec<Line<f32>> {
     // Find the overall bounding box
-    let mut x = [i32::MIN, i32::MAX];
-    let mut y = [i32::MIN, i32::MAX];
+    let mut x = [f32::MIN, f32::MAX];
+    let mut y = [f32::MIN, f32::MAX];
 
     let mut init = false;
     for line in &vectors {
         if !init {
             init = true;
-            x = [max(line.startx, line.endx), min(line.startx, line.endx)];
-            y = [max(line.starty, line.endy), min(line.starty, line.endy)];
+            x = [f32::max(line.startx, line.endx), f32::min(line.startx, line.endx)];
+            y = [f32::max(line.starty, line.endy), f32::min(line.starty, line.endy)];
         } else {
-            x[0] = max(x[0], max(line.startx, line.endx));
-            x[1] = min(x[1], min(line.startx, line.endx));
-            y[0] = max(y[0], max(line.starty, line.endy));
-            y[1] = min(y[1], min(line.starty, line.endy));
+            x[0] = f32::max(x[0], f32::max(line.startx, line.endx));
+            x[1] = f32::min(x[1], f32::min(line.startx, line.endx));
+            y[0] = f32::max(y[0], f32::max(line.starty, line.endy));
+            y[1] = f32::min(y[1], f32::min(line.starty, line.endy));
         }
     }
 
@@ -82,41 +81,43 @@ fn flatten_to_1s(vectors: Vec<Line<i32>>) -> Vec<Line<f32>> {
 // Pulls out a part of an image based on a rectangle
 use image::{DynamicImage, GenericImageView, ImageBuffer};
 fn get_rectangle_chunks_from_image(img: DynamicImage, rectangles: Vec<Rectangle>) -> Vec<DynamicImage> {
-    let mut chunks = Vec::new();
-
-    for rect in rectangles {
-        let width = (rect.x2 - rect.x1) as u32;
-        let height = (rect.y2 - rect.y1) as u32;
-
-        if width > 0 && height > 0 {
-            let x1 = rect.x1 as u32;
-            let y1 = rect.y1 as u32;
-
-            // Create a new image buffer for the chunk
-            let mut chunk_buffer = ImageBuffer::new(width, height);
-
-            // Copy pixels from the original image to the chunk
-            for x in 0..width {
-                for y in 0..height {
-                    let original_pixel = img.get_pixel(x1 + x, y1 + y);
-                    chunk_buffer.put_pixel(x, y, original_pixel);
+    let mut sub_images = Vec::new();
+    
+    for rectangle in rectangles {
+        let (width, height) = img.dimensions();
+        let x1 = (rectangle.x1 * width as f32) as u32;
+        let y1 = (rectangle.y1 * height as f32) as u32;
+        let x2 = (rectangle.x2 * width as f32) as u32;
+        let y2 = (rectangle.y2 * height as f32) as u32;
+        
+        if x1 < x2 && y1 < y2 {
+            let sub_width = x2 - x1;
+            let sub_height = y2 - y1;
+            
+            let mut sub_image = ImageBuffer::new(sub_width, sub_height);
+            
+            for y in 0..sub_height {
+                for x in 0..sub_width {
+                    let pixel = img.get_pixel(x1 + x, y1 + y);
+                    sub_image.put_pixel(x, y, pixel);
                 }
             }
+            
+            sub_images.push(DynamicImage::ImageRgba8(sub_image));
+        }               // },60000);
 
-            // Convert the buffer into a DynamicImage
-            let chunk_image = DynamicImage::ImageRgba8(chunk_buffer);
-            chunks.push(chunk_image);
-        }
     }
-
-    chunks
+    
+    sub_images
 }
+
 
 
 // Create a vector of non-overlapping rectangles from a vector of lines 
 fn create_grid_from_lines(lines: Vec<Line<f32>>) -> Vec<Rectangle> {
     // Phase: Get all Recs, sort by smallest area, cut them out 1 at a time in order of smallest -> largest
-    let mut all_rectangles: Vec<Rectangle> = Vec::new();
+    let mut all_rectangles: Vec<Rectangle> = Vec::new();               // },60000);
+
 
     let mut horizontal_lines: Vec<Line<f32>> = Vec::new();
     let mut vertical_lines: Vec<Line<f32>> = Vec::new();
@@ -147,10 +148,11 @@ fn create_grid_from_lines(lines: Vec<Line<f32>>) -> Vec<Rectangle> {
                     let hlines = vec![hline1, hline2];
                     let vlines = vec![vline1, vline2];
                     let rect = create_rectangles_from_lines(hlines, vlines);
-                    match rect {
-                        Some(Rectangle) => all_rectangles.push(rect.unwrap().clone()),
-                        None => ()
+
+                    if rect != None {
+                        all_rectangles.push(rect.unwrap().clone())
                     }
+
                 }
             }
 
@@ -167,7 +169,7 @@ fn create_grid_from_lines(lines: Vec<Line<f32>>) -> Vec<Rectangle> {
         // Check if the rectangle overlaps with any other rectangle
         let mut overlap = false;
         for cut in &cutted {
-            if isOverlap(&rectangle, &cut) {
+            if is_overlap(&rectangle, &cut) {
                 overlap = true;
                 break;
             }
@@ -185,7 +187,7 @@ fn create_grid_from_lines(lines: Vec<Line<f32>>) -> Vec<Rectangle> {
 
 
 // Determine if two rectangles overlap. Runs in O(1) time.
-fn isOverlap(rect1: &Rectangle, rect2: &Rectangle) -> bool {
+fn is_overlap(rect1: &Rectangle, rect2: &Rectangle) -> bool {
     if rect1.x1 >= rect2.x2 || rect2.x1 >= rect1.x2 {
         return false;
     }
@@ -213,32 +215,34 @@ fn create_rectangles_from_lines(horizontal_line: Vec<Line<f32>>, vertical_line: 
 
             // Check if the horizontal line y-values are between minTop and maxTop
             if horizontal_line[0].starty >= min_bot && horizontal_line[1].starty <= max_top {
-                let mut x1 = 0.0;
-                let mut x2 = 0.0;
-                let mut y1 = 0.0;
-                let mut y2 = 0.0;
-                if (vertical_line[0].startx < vertical_line[1].startx) {
+                let x1:f32;
+                let x2:f32;
+                let y1:f32;
+                let y2:f32;
+                if vertical_line[0].startx < vertical_line[1].startx {
                     x1 = f32::max(min_left, vertical_line[0].startx);
                     x2 = f32::min(max_right, vertical_line[1].endx);
                 }else {
                     x1 = f32::max(min_left, vertical_line[1].startx);
                     x2 = f32::min(max_right, vertical_line[0].endx);
                 }
-                if(horizontal_line[0].starty < horizontal_line[1].starty) {
+                if horizontal_line[0].starty < horizontal_line[1].starty {
                     y1 = f32::max(min_bot, horizontal_line[0].starty);
                     y2 = f32::min(max_top, horizontal_line[1].endy);
                 }else {
                     y1 = f32::max(min_bot, horizontal_line[1].starty);
                     y2 = f32::min(max_top, horizontal_line[0].endy);
                 }
-                return Some(Rectangle {
-                    x1: x1,
-                    x2: x2,
-                    y1: y1,
-                    y2: y2,
-                    //abs
-                    area: (x2 - x1).abs() * (y2 - y1).abs(),
-                });
+                let area = (x2 - x1) * (y2 - y1);
+                if area > 0.0 {
+                    return Some(Rectangle {
+                        x1: x1,
+                        x2: x2,
+                        y1: y1,
+                        y2: y2,
+                        area: (x2 - x1) * (y2 - y1),
+                    });
+                }
 
             }
         }
@@ -248,10 +252,9 @@ fn create_rectangles_from_lines(horizontal_line: Vec<Line<f32>>, vertical_line: 
 
 
 // Public exposed function
-pub fn split_image(img_path: &str, lines: Vec<Vec<i32>>) -> Vec<DynamicImage> {
-    let img = image::open(img_path).expect("File not found.");
+pub fn split_image(img: DynamicImage, lines: Vec<Vec<f32>>) -> Vec<DynamicImage> {
     // Convert the lines into the Struct Lines
-    let mut lines_struct: Vec<Line<i32>> = Vec::new();
+    let mut lines_struct: Vec<Line<f32>> = Vec::new();
     for line in lines {
         lines_struct.push(Line {
             startx: line[0],
