@@ -1,38 +1,19 @@
-# create-svelte
+# Data Engine
+Tauri App designed for batch processing of data.
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+## Solution
+Ever had to manually process 1K+ images for Machine Learning? Scrapping from the web is easy, 100K+ images can be grabbed in under an hour (assuming your scrapper is good to manuever rate limiting). However, it isn't fun at all to pop Photoshop/GIMP to edit 10K images is it?
 
-## Creating a project
+This data engine is the solution. Manually processing images is no fun, so this engine opens an interface to label and cut your images! There are more features up ahead too!
 
-If you're seeing this, you've probably already done this step. Congrats!
+## State
+Currently, it is not production ready.
+- The exports do not work. Should be patched relatively soon.
+- It also is tied to UNIX-based as I had to use the /tmp directory for rendering cache.
+- Performance Issues with blob urls: Should be patched soon when I use the file locations instead
+- Label nodes do not currently work (should be fixed soon)
 
-```bash
-# create a new project in the current directory
-npm create svelte@latest
-
-# create a new project in my-app
-npm create svelte@latest my-app
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+## Roadmap
+- Patching all the listed above
+- Node-based graph instead of a linear layer
+- Additional Input nodes
