@@ -1,15 +1,12 @@
 {
 	"name": "sxde",
 	"version": "0.0.1",
-	"license": "BSD-3-Clause",
+	"license": "Apache-2.0",
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
-		"preview": "vite preview",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"start": "electron .",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+		"preview": "vite preview"
 	},
 	"devDependencies": {
 		"@fontsource/fira-mono": "^4.5.10",

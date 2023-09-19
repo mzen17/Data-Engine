@@ -1,5 +1,5 @@
 # Data Engine
-Tauri App designed for batch processing of data.
+A high performance engine for batch processing data written as a Tauri App!
 
 ## Solution
 Ever had to manually process 1K+ images for Machine Learning? Scrapping from the web is easy, 100K+ images can be grabbed in under an hour (assuming your scrapper is good to manuever rate limiting). However, it isn't fun at all to pop Photoshop/GIMP to edit 10K images is it?
