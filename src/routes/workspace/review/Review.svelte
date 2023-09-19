@@ -9,6 +9,7 @@
     let images: string[] = [];
     let download_path: string;
     let previewAmount: number = 3;
+    let loading = false;
 
     const render =async() => {
         images = (await get_render(previewAmount))[0];

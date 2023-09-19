@@ -2,8 +2,7 @@
     import Nav from './Nav.svelte';
     import Himagepane from './panels/himagepane.svelte';
     import Vimagepane from './panels/vimagepane.svelte';
-    import { invoke } from '@tauri-apps/api/tauri';
-    import { readBinaryFile } from '@tauri-apps/api/fs';
+    import { invoke, convertFileSrc } from '@tauri-apps/api/tauri';
     import Graph from './graph/Graph.svelte';
     import { GraphNode, SplitNode, LabelNode } from './graph/Nodes';
     import Edit from './edit/Edit.svelte';
@@ -75,11 +74,8 @@
 
     let img_file_paths: string[] = [];
     const get_img_paths = async (data_url: string) => {
-        console.log("Fetching...")
-
         let images:string[] = []
         for (const folder of data_url) {
-            console.log("GOING TO ", folder)
             try {            
                 const res:string[] = await invoke('fetch_files', { dir: folder, extension: 'png' });
                 res.forEach((file: string) => {
@@ -93,24 +89,14 @@
                 console.error('Error:', error);
             }
         }
+
+        images = images.map((item: string) => {
+            return convertFileSrc(item);
+        });
+        console.log(images);
+        
         return images
     }; 
-
-
-    const render_img_paths = async(uris: string[], maxURIs=-1, start_index=0) => {
-        let bloburls:string[] = [];
-        for (let i = start_index; i<uris.length && (maxURIs < 0 || i<start_index+maxURIs); i++) {
-            const uri = uris[i];
-            const contents = await readBinaryFile(uri);
-
-            const blob = new Blob([contents], { type: 'image/jpeg' });
-            const url = URL.createObjectURL(blob);
-            bloburls = [...bloburls, url]
-            images_url = [...images_url, url]
-        }
-        return bloburls
-    }
-
 
     const save = (node: GraphNode) => {
         console.log("Node: ", node)
@@ -151,7 +137,7 @@
     const load_page = async () => {
         const images = await get_img_paths(data_path);
         img_file_paths = images;
-        await render_img_paths(images);
+        console.log(img_file_paths)
     }
 
 
@@ -167,7 +153,7 @@
 <section class="w-screen overflow-clip flex flex-col p-4" style="height: calc(100vh - 64px);">
     {#if current_page == 0}
         <h1>Preview</h1>
-        <Himagepane images = {images_url} />
+        <Himagepane images = {img_file_paths} />
     {:else if current_page == 3}
         <h1>Review</h1>
         <Review get_render={render_graph} />
