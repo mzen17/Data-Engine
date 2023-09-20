@@ -10,10 +10,11 @@ This data engine is the solution. Manually processing images is no fun, so this 
 Currently, it is not production ready.
 - The exports do not work. Should be patched relatively soon.
 - It also is tied to UNIX-based as I had to use the /tmp directory for rendering cache.
-- Performance Issues with blob urls: Should be patched soon when I use the file locations instead
 - Label nodes do not currently work (should be fixed soon)
+- It is only possible to do one operation at a time (if manual label)
 
 ## Roadmap
 - Patching all the listed above
 - Node-based graph instead of a linear layer
 - Additional Input nodes
+- Next layers will view the output of previous layer.
